@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Three.js Navigation</title>
+	</head>
+	<body style="font-family: Tahoma;">
+        <meta charset="utf-8">
+			<div id="title" style="text-align: center;"><h1>Three.js Navigation & Control Demo</h1></div>
+            <div id="screen" style="margin: 0px auto;"></div><br> 
+			<div id="instructions" style="text-align: left;">
+				<table style="margin: 0px auto; border-style: solid; border-color: #bbbbbb;">
+				<tr><th>Controls</th></tr>
+				<tr>
+					<th>
+						Rotate Camera:&nbsp;&nbsp;&nbsp; 
+					</th>
+					<th>
+						middle mouse button
+					</th>
+				</tr>
+				<tr>
+					<th>
+						Translate Camera:&nbsp;&nbsp;&nbsp;
+					</th>
+					<th>
+						left mouse button + SHIFT key
+					</th>
+				</tr>
+				<tr>
+					<th>
+						Zoom Camera:&nbsp;&nbsp;&nbsp; 
+					</th>
+					<th>
+						scroll wheel
+					</th>
+				</tr>
+				<tr>
+					<th>
+						Grab Object:&nbsp;&nbsp;&nbsp; 
+					</th>
+					<th>
+						left mouse button
+					</th>
+				</tr>
+				</table>
+			</div>           
+        <script type="text/javascript" src="./js/three.js"></script>
+        <script type="text/javascript" src="./js/viewport.js"></script>
+        <script type="text/javascript" src="./js/controls/orbit.js"></script>
+        <script type="text/javascript" src="./js/controls/grabber.js"></script>
+        <script type="text/javascript" src="./js/Detector.js"></script>
+        <script type="text/javascript">
+            function init( webglFlag ) {
+            
+				var screen = document.getElementById('screen');
+				var side_edge = 3;
+				var top_edge = 2;
+				var aspectRatio = top_edge / side_edge;
+				var pad = 40;
+				screen.style.width = window.innerWidth/2 - pad + "px";
+				screen.style.height = aspectRatio * eval(screen.style.width.slice(0,-2)) + "px";
+				var scene = new THREE.Scene();
+	 
+				//Scale multiplier for orthographic camera (like zoom, but without perspective).
+				//Not currently used in this demo
+				var scale_x = { key : 2 * ( side_edge ) / eval(screen.style.width.slice(0,-2)) };
+				var scale_y = { key : 2 * ( top_edge ) / eval(screen.style.height.slice(0,-2)) };
+		  
+				//var camera = new THREE.OrthographicCamera( - side_edge, side_edge, top_edge, - top_edge, - 100, 100 );
+				var pivot = new THREE.Object3D();
+				pivot.name = 'pivot';
+				scene.add( pivot );
+				var camera = new THREE.PerspectiveCamera();//15, side_edge/top_edge, 1, 1000);
+				camera.position.z = 8;
+				scene.add( camera );
+				pivot.add( camera );
+
+				//Viewport handles scaling from browser window coordinates to three.js coordinates.
+				var viewport = new THREE.viewportConfig(camera, screen, 5, 5 * aspectRatio, camera.position.z);
+				viewport.updateScale()
+				var scales = viewport.getViewScale();
+
+				//CamOrbit handles all navigation. It acts like a pivot point around which the user can move.
+				var camOrbit = new THREE.orbitControls(pivot, scales.width, scales.height, screen);
+	 
+				//  RENDERER
+				//Webgl compatability is checked here.
+				webglFlag = typeof webglFlag !== 'undefined' ? webglFlag : false;
+				var renderer;
+				if (webglFlag) {
+					renderer = new THREE.WebGLRenderer();
+				} else {
+					renderer = new THREE.CanvasRenderer();
+				}
+				renderer.setSize( eval(screen.style.width.slice(0,-2)), eval(screen.style.height.slice(0,-2)) );
+				screen.appendChild( renderer.domElement );
+				renderer.setClearColor (new THREE.Color (0xaaccff), 1);
+				//  END RENDERER
+				
+				/////////////////////////////////
+				//  cube (mouse clickable)
+				var geoB = new THREE.CubeGeometry(1, 1, 1);
+				var matB = new THREE.MeshLambertMaterial( { color: 0xFF0000, shading: THREE.FlatShading } );
+				var cube = new THREE.Mesh(geoB, matB);
+				cube.name = "cube";
+				cube.rotation.x = Math.PI / 4;
+				cube.rotation.y = Math.PI / 4;
+				cube.position.x = 2;
+				scene.add(cube);
+				
+				/////////////////////////////////
+				//  mouse (cursor)
+				var geoC = new THREE.OctahedronGeometry(0.4, 1);
+				var geoC2 = new THREE.OctahedronGeometry(0.02, 1);
+				var matC = new THREE.MeshBasicMaterial( { color: 0xFF0000, wireframe: true} );
+				var cur2 = new THREE.Mesh(geoC2, matC);
+				var cursor = new THREE.Mesh(geoC, matC);
+				cursor.add(cur2);
+				//scene.add(cursor);
+				
+				/////////////////////////////////
+				//  cylinder (mouse clickable)
+				var geoT = new THREE.CylinderGeometry(1, 1, 2, 8, 1, false);
+				var matT = new THREE.MeshLambertMaterial( { color: 0xFFFF00, shading: THREE.FlatShading } );
+				var cylinder = new THREE.Mesh(geoT, matT);
+				cylinder.name = "cylinder";
+				cylinder.rotation.z = Math.PI / 4;
+				cylinder.rotation.x = Math.PI / 4;
+				cylinder.position.z = - 4;
+				cylinder.position.y = - 2;
+				scene.add( cylinder );
+				
+				/////////////////////////////////
+				//  sphere (mouse clickable)
+				var geoS = new THREE.OctahedronGeometry(1, 1);
+				var matS = new THREE.MeshLambertMaterial( { color: 0x0000FF, shading: THREE.FlatShading } );
+				var sphere = new THREE.Mesh(geoS, matS);
+				sphere.name = "sphere";
+				sphere.position.x = - 1;
+				sphere.position.z = 1;
+				sphere.position.y = 1;
+				scene.add( sphere );
+				
+				/////////////////////////////////
+				//  Plane
+				var geoP = new THREE.PlaneGeometry(20, 20, 8, 8);
+				var matP = new THREE.MeshLambertMaterial( { color: 0x777777, shading: THREE.FlatShading } );
+				var plane = new THREE.Mesh(geoP, matP);
+				plane.name = "plane";
+				plane.rotation.x = - Math.PI / 2;
+				plane.position.y = - 3.5;
+				scene.add( plane );
+				
+				//Lights!!
+				var light = new THREE.DirectionalLight( 0x404040, 5, 100 );
+				light.position.set( 5, 5, 10 );
+				scene.add( light );
+				light.target = plane;
+				
+				var grabber = new THREE.grabber( cylinder, camera, cursor, scales.width, scales.height, screen );
+				var grabberL = new THREE.grabber( cube, camera, cursor, scales.width, scales.height, screen );
+				var grabberS = new THREE.grabber( sphere, camera, cursor, scales.width, scales.height, screen );
+
+				window.addEventListener( 'resize', function() {
+					viewport.updateScale();
+					updateScales();
+					scales = viewport.getViewScale();
+					grabber.updateScaling(scales.width, scales.height);
+					grabberL.updateScaling(scales.width, scales.height);
+					grabberS.updateScaling(scales.width, scales.height);
+					onWindowResize( screen, window, aspectRatio, true );
+					updateCamRend( renderer, camera, screen);
+				}, false );
+
+				function onWindowResize( element, wind, aspect, vertical ){
+					vertical = typeof vertical !== 'undefined' ? vertical : false;
+					element.style.width = wind.innerWidth / 2 - pad + "px";
+					if (vertical) element.style.height = aspect * eval(element.style.width.slice(0,-2)) + "px";
+				}
+				
+				function updateCamRend( rend, cam, element) {
+					rend.setSize( eval(element.style.width.slice(0,-2)), eval(element.style.height.slice(0,-2)) );
+					cam.updateProjectionMatrix();
+				}
+				
+				function updateScales() {
+					scales = {
+						width : 2 * ( side_edge ) / eval(screen.style.width.slice(0,-2)),
+						height : 2 * ( top_edge ) / eval(screen.style.height.slice(0,-2))
+					};
+				}
+
+				function getMouseVector2d(element, x, y, sca_x, sca_y) {
+					return { 
+						x: sca_x * ( x - element.offsetLeft - element.style.width.slice(0, -2) / 2 ) + pivot.position.x,
+						y: - sca_y * ( y - element.offsetTop - element.style.height.slice(0, -2) / 2 ) + pivot.position.y,
+						z: pivot.position.z
+					};
+				}
+
+				var active_handle = false;
+				var moving = false;
+
+				
+				function render() {
+
+					camOrbit.update();
+					grabber.update();
+					grabberL.update()
+					grabberS.update();
+					
+					requestAnimationFrame(render);
+					renderer.render(scene, camera);
+				}
+				
+				render();
+            
+            }
+            //  END of function init()
+            /////////////////////////////////
+
+            if (Detector.webgl) {
+                init( true );
+            } else {
+                init();
+            }       
+			
+        </script>
+	</body>
+</html>
